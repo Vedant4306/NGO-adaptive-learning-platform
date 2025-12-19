@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduLift | Complete Academic Master Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] } } }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Outfit', sans-serif; transition: all 0.4s ease; overflow: hidden; }
+        .glass-card { background: white; border-radius: 1.25rem; border: 1px solid #F1F5F9; transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .dark .glass-card { background: rgba(30, 41, 59, 0.7); border-color: #334155; }
+        .section-hidden { display: none; }
+        .section-active { display: block; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .gemini-fab { animation: pulse-indigo 2s infinite; }
+        @keyframes pulse-indigo { 0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(79, 70, 229, 0); } 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); } }
+        
+        .scanner-line { height: 2px; background: #10B981; position: absolute; width: 100%; top: 0; animation: scan 2s infinite linear; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 40px; background: white; }
+            .print-grid { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+            .print-card { border: 1px solid #ddd; padding: 15px; border-radius: 10px; text-align: center; page-break-inside: avoid; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+
+    <div id="print-area" class="hidden"></div>
+
+    <a href="https://gemini.google.com" target="_blank" class="gemini-fab fixed bottom-8 right-8 w-16 h-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-[200] hover:scale-110 transition-transform">
+        <i class="fa-solid fa-wand-magic-sparkles text-2xl"></i>
+    </a>
+
+    <div id="role-selection" class="fixed inset-0 z-[100] bg-white dark:bg-slate-900 flex items-center justify-center p-6 text-center">
+        <div class="max-w-4xl w-full">
+            <h1 class="text-5xl font-black mb-12 tracking-tight">Edu<span class="text-indigo-600">Lift</span></h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div onclick="initApp('teacher')" class="glass-card p-10 cursor-pointer border-2 border-transparent hover:border-indigo-500 group transition-all">
+                    <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all"><i class="fa-solid fa-chalkboard-user text-3xl"></i></div>
+                    <h2 class="text-2xl font-bold">Teacher Portal</h2>
+                </div>
+                <div onclick="openStudentLogin()" class="glass-card p-10 cursor-pointer border-2 border-transparent hover:border-emerald-500 group transition-all">
+                    <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-all"><i class="fa-solid fa-qrcode text-3xl"></i></div>
+                    <h2 class="text-2xl font-bold">Student Portal</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-modal" class="fixed inset-0 z-[110] bg-black/95 hidden items-center justify-center p-6 backdrop-blur-md">
+        <div class="max-w-md w-full text-center space-y-6">
+            <div class="w-48 h-48 mx-auto border-4 border-emerald-500 rounded-3xl relative overflow-hidden bg-slate-900 flex items-center justify-center">
+                <div class="scanner-line"></div>
+                <i class="fa-solid fa-camera text-white/10 text-6xl"></i>
+            </div>
+            <input type="text" id="login-id-input" placeholder="Enter Access ID (e.g. ROH42)" class="w-full p-4 bg-white/10 border border-white/20 text-white rounded-xl text-center outline-none focus:ring-2 focus:ring-emerald-500">
+            <button onclick="handleLogin()" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold">Access Portal</button>
+            <button onclick="closeStudentLogin()" class="text-white/40 text-xs font-bold uppercase">Back</button>
+        </div>
+    </div>
+
+    <div id="main-app" class="hidden h-screen w-full flex overflow-hidden">
+        
+        <aside class="w-72 bg-white dark:bg-slate-800 border-r dark:border-slate-700 flex flex-col no-print">
+            <div class="p-6 border-b dark:border-slate-700 font-bold text-xl flex items-center gap-2">
+                <div class="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center text-white text-[10px]"><i class="fa-solid fa-graduation-cap"></i></div>
+                EduLift
+            </div>
+            <nav id="sidebar-nav" class="flex-1 p-4 space-y-2"></nav>
+            <div class="p-4 border-t dark:border-slate-700">
+                <button onclick="location.reload()" class="w-full p-3 text-slate-400 hover:text-rose-500 font-bold text-sm transition-colors"><i class="fa-solid fa-power-off mr-2"></i>Exit</button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="h-20 border-b dark:border-slate-700 px-8 flex items-center justify-between bg-white dark:bg-slate-800 no-print">
+                <h2 id="page-title" class="text-xl font-bold text-slate-800 dark:text-white">Dashboard</h2>
+                <div class="flex items-center gap-6">
+                    <div id="study-timer-display" class="hidden flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
+                        <i class="fa-solid fa-clock text-indigo-600 animate-pulse"></i>
+                        <span id="timer-val" class="text-xs font-black tracking-wider text-indigo-700">00:00:00</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right hidden sm:block">
+                            <p id="h-user-name" class="text-sm font-bold"></p>
+                            <p id="h-user-meta" class="text-[10px] text-slate-400 font-bold uppercase"></p>
+                        </div>
+                        <img id="h-user-avatar" class="w-10 h-10 rounded-full border-2 border-indigo-500">
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 pb-12" id="content-area">
+                
+                <div id="tab-t-dash" class="section-hidden space-y-8">
+                    <h1 class="text-3xl font-black">Teacher Command Center</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div onclick="switchTab('t-roster')" class="bg-emerald-500 p-8 rounded-2xl text-white shadow-lg cursor-pointer hover:scale-105 transition-transform"><h4 class="text-5xl font-black" id="stat-active">1</h4><p class="text-sm font-bold uppercase opacity-80 mt-1">Students</p></div>
+                        <div class="bg-orange-500 p-8 rounded-2xl text-white shadow-lg"><h4 class="text-5xl font-black">01</h4><p class="text-sm font-bold uppercase opacity-80 mt-1">Need Attention</p></div>
+                        <div class="bg-blue-500 p-8 rounded-2xl text-white shadow-lg"><h4 class="text-5xl font-black">74%</h4><p class="text-sm font-bold uppercase opacity-80 mt-1">Avg Completion</p></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="glass-card p-6 border-l-4 border-indigo-600 bg-indigo-50/10">
+                            <h3 class="font-bold text-indigo-600 mb-4 flex items-center gap-2"><i class="fa-solid fa-bullhorn"></i> Post Class Announcement</h3>
+                            <textarea id="teacher-announcement-input" class="w-full p-4 border rounded-xl dark:bg-slate-800 outline-none focus:ring-2 focus:ring-indigo-500 h-32" placeholder="Type your message for the class notice board..."></textarea>
+                            <button onclick="broadcastAnnouncement()" class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all">Broadcast to All Students</button>
+                        </div>
+                        
+                        <div class="glass-card p-6 border-l-4 border-amber-500">
+                            <h3 class="font-bold text-amber-600 mb-6 flex items-center gap-2"><i class="fa-solid fa-trophy"></i> Class Leaderboard</h3>
+                            <div id="leaderboard-list" class="space-y-3"></div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="openAddStudentModal()" class="glass-card p-6 w-full text-left font-bold text-indigo-600 shadow-sm transition-all hover:bg-indigo-50">+ Register New Student (Duplicate-Proof)</button>
+                </div>
+
+                <div id="tab-t-roster" class="section-hidden space-y-6">
+                    <div class="flex justify-between items-center"><h3 class="text-2xl font-bold">Roster</h3><div class="flex gap-2"><input type="text" id="roster-search" onkeyup="renderRoster()" placeholder="Search Name/ID..." class="p-2 border rounded-xl dark:bg-slate-800"><button onclick="window.print()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg">Print QR Cards</button></div></div>
+                    <div id="roster-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                </div>
+
+                <div id="tab-s-dash" class="section-hidden space-y-8 pb-12">
+                    <div id="student-notice-board" class="hidden bg-indigo-600 text-white p-6 rounded-2xl flex items-center gap-6 shadow-2xl animate-pulse">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-bullhorn"></i></div>
+                        <div><p class="text-xs font-black uppercase opacity-70 mb-1">Message from Teacher</p><p id="latest-announcement-text" class="text-lg font-bold"></p></div>
+                    </div>
+
+                    <div class="glass-card p-10 bg-indigo-600 text-white flex flex-col md:flex-row justify-between items-center">
+                        <div><h2 class="text-4xl font-black mb-2">My Academic Hub</h2><p class="opacity-80">Track completion for EVS, Maths, English, and Hindi.</p></div>
+                        <button onclick="generateReportCard()" class="bg-white text-indigo-600 px-8 py-3 rounded-xl font-bold shadow-xl">Report Card</button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 glass-card p-8"><h3 class="font-bold text-slate-800 dark:text-white mb-6">1. Subject Mastery</h3><div id="subject-progress" class="space-y-6"></div></div>
+                        <div class="glass-card p-6 border-l-4 border-rose-500"><h3 class="font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-rose-500"></i> 2. Weaknesses</h3><div id="weakness-list" class="space-y-3"></div></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="glass-card p-8"><h3 class="font-bold mb-6 text-indigo-600">3. Time Spent Log</h3><div id="time-spent-list" class="space-y-4"></div></div>
+                        <div class="glass-card p-8">
+                            <h3 class="font-bold mb-6 text-emerald-600">4. Learning Hub</h3>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <a href="https://ncert.nic.in/textbook.php" target="_blank" class="p-3 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100 text-center text-xs">NCERT Books</a>
+                                    <a id="solution-link" href="#" target="_blank" class="p-3 bg-blue-50 text-blue-700 font-bold rounded-lg border border-blue-100 text-center text-xs">NCERT Solutions</a>
+                                    <a href="https://share.google/4Ly3qfdGeSVEoLrIn" target="_blank" class="p-3 bg-rose-50 text-rose-700 font-bold rounded-lg border border-rose-100 text-center text-xs col-span-2">Maths YouTube Library</a>
+                                </div>
+                                <div class="pt-4 border-t border-slate-100"><p class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest" id="syllabus-title">Syllabus</p><div id="syllabus-links-container" class="grid grid-cols-2 gap-2"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6"><h3 class="font-bold mb-4 text-indigo-600">Recent Quiz Performance</h3><div id="quiz-history" class="space-y-2"></div></div>
+                </div>
+
+                <div id="tab-s-quizzes" class="section-hidden space-y-8">
+                    <h2 class="text-3xl font-black">Subject assessments</h2>
+                    <div id="quiz-selection" class="grid grid-cols-1 md:grid-cols-4 gap-6"></div>
+                    <div id="active-quiz-box" class="hidden max-w-2xl mx-auto glass-card p-8 space-y-6">
+                        <div class="flex justify-between items-center border-b pb-4"><h3 id="quiz-title" class="font-bold text-xl"></h3><span id="quiz-step" class="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase"></span></div>
+                        <div id="quiz-question-container" class="space-y-4"><p id="quiz-question-text" class="text-lg font-medium"></p><div id="quiz-options" class="grid gap-3"></div></div>
+                        <div class="flex gap-3"><button id="next-q-btn" onclick="nextQuestion()" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg">Next Question</button><button onclick="switchTab('s-quizzes')" class="px-6 text-slate-400 font-bold">Cancel</button></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="add-student-modal" class="fixed inset-0 z-[120] bg-black/60 hidden items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 max-w-md w-full rounded-3xl p-8 shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6">Register Student</h3>
+            <div id="reg-form" class="space-y-4">
+                <input type="text" id="reg-name" placeholder="Full Name" class="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="date" id="reg-dob" class="w-full p-4 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <select id="reg-class" class="w-full p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500"><option value="Grade 4">Grade 4</option><option value="Grade 5">Grade 5</option></select>
+                <p id="reg-error" class="text-xs text-rose-500 font-bold hidden">Student already exists (Name + DOB match)!</p>
+                <button onclick="validateAndRegister()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg transition-all active:scale-95">Register & Generate QR</button>
+                <button onclick="closeAddStudentModal()" class="w-full text-slate-400 text-sm font-bold uppercase mt-2">Cancel</button>
+            </div>
+            <div id="reg-success" class="hidden text-center space-y-4"><div class="bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-indigo-200"><img id="reg-qr" class="mx-auto border-4 border-white rounded-lg shadow-md mb-4"><p class="text-sm font-bold" id="reg-display-id"></p></div><button onclick="closeAddStudentModal()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Done</button></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let studySeconds = 0;
+        let activeQuiz = null;
+        let currentStep = 0;
+        let score = 0;
+        let currentSub = "";
+        let currentChap = "";
+        let classAnnouncement = "";
+
+        let quizData = {
+            "Maths": { "Fractions": [{ q: "1/2 + 1/2?", a: ["1", "1/4", "2"], c: 0 }, { q: "Greater?", a: ["1/4", "1/2", "1/8"], c: 1 }] },
+            "Hindi": { "Grammar": [{ q: "Vowel count?", a: ["11", "13", "33"], c: 0 }] },
+            "English": { "Nouns": [{ q: "Identify Noun:", a: ["Run", "Mumbai", "Fast"], c: 1 }] },
+            "EVS": { "Animals": [{ q: "Herbivore?", a: ["Lion", "Cow", "Tiger"], c: 1 }] }
+        };
+
+        let academicData = {
+            "Grade 4": { solutions: "https://www.vedantu.com/ncert-solutions/ncert-solutions-class-4", syllabus: [{ name: "Maths", url: "https://www.vedantu.com/syllabus/cbse-class-4-maths-syllabus" }, { name: "Hindi", url: "https://www.vedantu.com/syllabus/cbse-class-4-hindi-syllabus" }, { name: "English", url: "https://www.vedantu.com/syllabus/cbse-class-4-english-syllabus" }, { name: "EVS", url: "https://www.vedantu.com/syllabus/cbse-class-4-evs-syllabus" }] },
+            "Grade 5": { solutions: "https://www.vedantu.com/ncert-solutions/ncert-solutions-class-5", syllabus: [{ name: "Maths", url: "https://www.vedantu.com/syllabus/cbse-class-5-maths-syllabus" }, { name: "Hindi", url: "https://www.vedantu.com/syllabus/cbse-class-5-hindi-syllabus" }, { name: "English", url: "https://www.vedantu.com/syllabus/cbse-class-5-english-syllabus" }, { name: "EVS", url: "https://www.vedantu.com/syllabus/cbse-class-5-evs-syllabus" }] }
+        };
+
+        let students = [{ id: "ROH42", name: "Rohan Das", dob: "2015-05-12", class: "Grade 4", academics: [{ sub: "Mathematics", percent: 90, time: "5h 20m" }, { sub: "Hindi", percent: 65, time: "3h" }, { sub: "English", percent: 80, time: "4h" }, { sub: "EVS", percent: 45, time: "2h" }], weakness: ["Division"], quizHistory: [{ sub: "Maths", chap: "Fractions", score: 2, total: 2, date: "2025-12-18" }] }];
+
+        function initApp(role, id = null) {
+            document.getElementById('role-selection').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            const nav = document.getElementById('sidebar-nav');
+            if(role === 'teacher') {
+                document.getElementById('h-user-name').innerText = "Mrs. Sarah";
+                document.getElementById('h-user-avatar').src = "https://api.dicebear.com/7.x/avataaars/svg?seed=Teacher";
+                nav.innerHTML = `<button onclick="switchTab('t-dash')" class="w-full text-left p-3 rounded-lg font-bold bg-indigo-50 text-indigo-600">Command Center</button><button onclick="switchTab('t-roster')" class="w-full text-left p-3 rounded-lg font-bold text-slate-500">Directory</button>`;
+                switchTab('t-dash');
+            } else {
+                currentUser = students.find(s => s.id === id);
+                document.getElementById('h-user-name').innerText = currentUser.name;
+                document.getElementById('h-user-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.id}`;
+                nav.innerHTML = `<button onclick="switchTab('s-dash')" class="w-full text-left p-3 rounded-lg font-bold bg-indigo-50 text-indigo-600">Dashboard</button><button onclick="switchTab('s-quizzes')" class="w-full text-left p-3 rounded-lg font-bold text-slate-500">Quizzes</button>`;
+                switchTab('s-dash'); startStudyTimer(); renderStudentPortal(); renderQuizHub();
+            }
+        }
+
+        // TEACHER: BROADCAST ANNOUNCEMENT
+        function broadcastAnnouncement() {
+            const input = document.getElementById('teacher-announcement-input');
+            if(!input.value.trim()) return alert("Enter a message first!");
+            classAnnouncement = input.value.trim();
+            alert("Broadcasted successfully! All students will see this on their notice board.");
+            input.value = "";
+        }
+
+        function renderStudentPortal() {
+            // Notice Board logic
+            const board = document.getElementById('student-notice-board');
+            const text = document.getElementById('latest-announcement-text');
+            if(classAnnouncement) { board.classList.remove('hidden'); text.innerText = classAnnouncement; }
+
+            document.getElementById('subject-progress').innerHTML = currentUser.academics.map(a => `<div><div class="flex justify-between text-xs font-bold mb-1"><span>${a.sub}</span><span>${a.percent}%</span></div><div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-indigo-600 h-full" style="width:${a.percent}%"></div></div></div>`).join('');
+            document.getElementById('time-spent-list').innerHTML = currentUser.academics.map(a => `<div class="flex justify-between p-2 border-b text-xs"><span>${a.sub}</span><span class="font-bold text-indigo-600">${a.time} Spent</span></div>`).join('');
+            document.getElementById('weakness-list').innerHTML = currentUser.weakness.map(w => `<div class="p-2 bg-rose-50 text-rose-700 text-xs font-bold rounded">${w}</div>`).join('');
+            document.getElementById('quiz-history').innerHTML = currentUser.quizHistory.map(h => `<div class="p-2 bg-slate-50 rounded flex justify-between text-xs font-bold"><span>${h.chap}</span><span class="text-emerald-500">${h.score}/${h.total}</span></div>`).join('');
+            const gd = academicData[currentUser.class] || academicData["Grade 4"];
+            document.getElementById('solution-link').href = gd.solutions;
+            document.getElementById('syllabus-links-container').innerHTML = gd.syllabus.map(l => `<a href="${l.url}" target="_blank" class="p-2 bg-slate-50 border rounded-lg text-[10px] font-bold text-center">${l.name} Syllabus</a>`).join('');
+        }
+
+        function validateAndRegister() {
+            const n = document.getElementById('reg-name').value;
+            const d = document.getElementById('reg-dob').value;
+            const c = document.getElementById('reg-class').value;
+            if(!n || !d) return alert("Fill all fields");
+            if(students.some(s => s.name.toLowerCase() === n.toLowerCase() && s.dob === d)) { document.getElementById('reg-error').classList.remove('hidden'); return; }
+            const id = n.substring(0,3).toUpperCase() + Math.floor(Math.random()*99);
+            students.push({ id, name: n, dob: d, class: c, academics: [{sub:"Maths",percent:0,time:"0h"},{sub:"Hindi",percent:0,time:"0h"},{sub:"English",percent:0,time:"0h"},{sub:"EVS",percent:0,time:"0h"}], weakness: [], quizHistory: [] });
+            document.getElementById('reg-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${id}`;
+            document.getElementById('reg-display-id').innerText = "ID: " + id;
+            document.getElementById('reg-form').classList.add('hidden');
+            document.getElementById('reg-success').classList.remove('hidden');
+            document.getElementById('stat-active').innerText = students.length;
+        }
+
+        function switchTab(id) {
+            document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.replace('section-active', 'section-hidden'));
+            document.getElementById('tab-' + id).classList.replace('section-hidden', 'section-active');
+            if(id === 't-roster') renderRoster();
+            if(id === 't-dash') renderLeaderboard();
+        }
+
+        function renderRoster() {
+            const q = document.getElementById('roster-search').value.toLowerCase();
+            document.getElementById('roster-grid').innerHTML = students.filter(s => s.name.toLowerCase().includes(q)).map(s => `<div class="glass-card p-5 flex items-center gap-4"><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${s.id}" class="w-12 h-12 border p-1 rounded"><div><h4 class="font-bold text-sm">${s.name}</h4><p class="text-[10px] text-slate-400">ID: ${s.id}</p></div></div>`).join('');
+        }
+
+        function renderLeaderboard() {
+            const ranked = [...students].sort((a,b) => b.quizHistory.length - a.quizHistory.length);
+            document.getElementById('leaderboard-list').innerHTML = ranked.map((s,i) => `<div class="p-3 bg-white rounded-xl flex justify-between text-sm shadow-sm"><span>#${i+1} ${s.name}</span><span class="text-indigo-600 font-black">${s.quizHistory.length} Done</span></div>`).join('');
+        }
+
+        function renderQuizHub() {
+            document.getElementById('quiz-selection').innerHTML = Object.keys(quizData).map(sub => `<div class="glass-card p-6"><h3 class="font-bold text-indigo-600 mb-4">${sub}</h3>${Object.keys(quizData[sub]).map(chap => `<button onclick="startQuiz('${sub}', '${chap}')" class="w-full text-left p-3 bg-slate-50 hover:bg-indigo-50 rounded-lg text-sm font-bold flex justify-between mb-2">${chap} <i class="fa-solid fa-play text-[8px]"></i></button>`).join('')}</div>`).join('');
+        }
+
+        function startQuiz(sub, chap) {
+            activeQuiz = quizData[sub][chap]; currentSub = sub; currentChap = chap; currentStep = 0; score = 0;
+            document.getElementById('quiz-selection').classList.add('hidden');
+            document.getElementById('active-quiz-box').classList.remove('hidden');
+            document.getElementById('quiz-title').innerText = chap; loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = activeQuiz[currentStep];
+            document.getElementById('quiz-step').innerText = `Q ${currentStep+1} of ${activeQuiz.length}`;
+            document.getElementById('quiz-question-text').innerText = q.q;
+            document.getElementById('quiz-options').innerHTML = q.a.map((opt,i) => `<button onclick="handleAnswer(${i})" class="text-left p-4 border-2 border-slate-100 hover:border-indigo-500 rounded-xl font-bold">${opt}</button>`).join('');
+            document.getElementById('next-q-btn').classList.add('hidden');
+        }
+
+        function handleAnswer(i) { if(i === activeQuiz[currentStep].c) score++; document.getElementById('next-q-btn').classList.remove('hidden'); }
+
+        function nextQuestion() {
+            currentStep++;
+            if(currentStep < activeQuiz.length) loadQuestion();
+            else {
+                alert(`Quiz Finished! Score: ${score}/${activeQuiz.length}`);
+                currentUser.quizHistory.unshift({ sub: currentSub, chap: currentChap, score: score, total: activeQuiz.length, date: new Date().toISOString().split('T')[0] });
+                document.getElementById('active-quiz-box').classList.add('hidden');
+                document.getElementById('quiz-selection').classList.remove('hidden');
+                renderStudentPortal();
+            }
+        }
+
+        function startStudyTimer() {
+            document.getElementById('study-timer-display').classList.remove('hidden');
+            setInterval(() => { studySeconds++; const h = Math.floor(studySeconds/3600).toString().padStart(2,'0'); const m = Math.floor((studySeconds%3600)/60).toString().padStart(2,'0'); const s = (studySeconds%60).toString().padStart(2,'0'); document.getElementById('timer-val').innerText = `${h}:${m}:${s}`; }, 1000);
+        }
+
+        function generateReportCard() { window.print(); }
+        function openStudentLogin() { document.getElementById('login-modal').classList.replace('hidden', 'flex'); }
+        function closeStudentLogin() { document.getElementById('login-modal').classList.replace('flex', 'hidden'); }
+        function openAddStudentModal() { document.getElementById('add-student-modal').classList.replace('hidden', 'flex'); document.getElementById('reg-form').classList.remove('hidden'); document.getElementById('reg-success').classList.add('hidden'); }
+        function closeAddStudentModal() { document.getElementById('add-student-modal').classList.replace('flex', 'hidden'); }
+        function handleLogin() {
+            const val = document.getElementById('login-id-input').value.trim().toUpperCase();
+            if(students.some(s => s.id === val)) { closeStudentLogin(); initApp('student', val); }
+            else alert("ID invalid");
+        }
+    </script>
+</body>
+</html>
