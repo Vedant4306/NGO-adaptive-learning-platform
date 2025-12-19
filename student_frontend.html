@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Dashboard - NGO Learning</title>
+  <link rel="stylesheet" href="teacher.css" />
+</head>
+<body>
+
+  <header>
+    <h1>NGO Adaptive Learning – Teacher Dashboard</h1>
+    <p>Register students and monitor learning</p>
+  </header>
+
+  <main>
+    <!-- Register Student -->
+    <section class="card">
+      <h2>Register New Student</h2>
+
+      <form id="registerForm">
+        <input type="text" id="name" placeholder="Student Name" required />
+        <input type="number" id="age" placeholder="Age" required />
+        <button type="submit">Register Student</button>
+      </form>
+
+      <div id="registerResult"></div>
+    </section>
+
+    <!-- Registered Students -->
+    <section class="card">
+      <h2>Registered Students</h2>
+      <ul id="studentList"></ul>
+    </section>
+  </main>
+
+  <script src="teacher.js"></script>
+</body>
+</html>
